@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Typing Test – Cloud & DevOps</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #020617;
+    color: #e5e7eb;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.container {
+    width: 90%;
+    max-width: 700px;
+    padding: 20px;
+    border-radius: 10px;
+    border: 1px solid #334155;
+}
+
+h2 {
+    text-align: center;
+}
+
+select {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+.text {
+    padding: 15px;
+    border: 1px solid #334155;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    line-height: 1.6;
+}
+
+.correct { color: #22c55e; }
+.incorrect { color: #ef4444; }
+
+textarea {
+    width: 100%;
+    height: 120px;
+    padding: 10px;
+    font-size: 16px;
+    border-radius: 5px;
+    resize: none;
+    border: none;
+    outline: none;
+}
+
+.stats {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.stats div {
+    flex: 1;
+    text-align: center;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #334155;
+}
+
+button {
+    width: 100%;
+    margin-top: 15px;
+    padding: 10px;
+    font-size: 16px;
+    background: #2563eb;
+    border: none;
+    border-radius: 5px;
+    color: white;
+    cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+    <h2>Cloud & DevOps Typing Test</h2>
+
+    <select id="topic" onchange="restartTest()">
+        <option value="aws">AWS</option>
+        <option value="azure">Azure</option>
+        <option value="devops">DevOps</option>
+    </select>
+
+    <div id="text" class="text"></div>
+
+    <textarea id="input" placeholder="Start typing..."></textarea>
+
+    <div class="stats">
+        <div>
+            <h4>WPM</h4>
+            <p id="wpm">0</p>
+        </div>
+        <div>
+            <h4>Accuracy</h4>
+            <p id="accuracy">100%</p>
+        </div>
+        <div>
+            <h4>Time</h4>
+            <p id="time">60s</p>
+        </div>
+        <div>
+            <h4>Best</h4>
+            <p id="best">0</p>
+        </div>
+    </div>
+
+    <button onclick="restartTest()">Restart</button>
+</div>
+
+<script>
+const content = {
+    aws: [
+        "Amazon Web Services provides scalable cloud computing services including EC2 S3 IAM and RDS for building reliable applications.",
+        "AWS Identity and Access Management allows fine grained permissions to control access to cloud resources securely.",
+        "Elastic Load Balancing automatically distributes traffic across multiple targets to improve application availability."
+    ],
+    azure: [
+        "Microsoft Azure offers services such as virtual machines app services and Azure Active Directory for enterprise workloads.",
+        "Azure DevOps provides pipelines repositories and boards to manage the complete application lifecycle.",
+        "Azure Virtual Networks enable secure communication between cloud resources and on premises environments."
+    ],
+    devops: [
+        "DevOps focuses on collaboration automation and continuous delivery to reduce deployment failures.",
+        "CI CD pipelines automate building testing and deploying applications using tools like Jenkins GitHub Actions and GitLab.",
+        "Infrastructure as Code uses tools like Terraform and CloudFormation to manage resources consistently."
+    ]
+};
+
+const textDisplay = document.getElementById("text");
+const input = document.getElementById("input");
+const wpmDisplay = document.getElementById("wpm");
+const accuracyDisplay = document.getElementById("accuracy");
+const timeDisplay = document.getElementById("time");
+const bestDisplay = document.getElementById("best");
+const topicSelect = document.getElementById("topic");
+
+let timeLeft = 60;
+let timer = null;
+let startTime = null;
+let bestWPM = localStorage.getItem("bestWPM") || 0;
+
+bestDisplay.innerText = bestWPM;
+
+function loadText() {
+    textDisplay.innerHTML = "";
+    const topic = topicSelect.value;
+    const texts = content[topic];
+    const selected = texts[Math.floor(Math.random() * texts.length)];
+
+    selected.split("").forEach(char => {
+        const span = document.createElement("span");
+        span.innerText = char;
+        textDisplay.appendChild(span);
+    });
+}
+
+loadText();
+
+input.addEventListener("input", () => {
+    if (!startTime) {
+        startTime = new Date();
+        timer = setInterval(updateTimer, 1000);
+    }
+
+    const chars = textDisplay.querySelectorAll("span");
+    const typed = input.value.split("");
+
+    let correct = 0;
+    let errors = 0;
+
+    chars.forEach((char, i) => {
+        if (typed[i] == null) {
+            char.className = "";
+        } else if (typed[i] === char.innerText) {
+            char.className = "correct";
+            correct++;
+        } else {
+            char.className = "incorrect";
+            errors++;
+        }
+    });
+
+    const timeSpent = (new Date() - startTime) / 60000;
+    const grossWPM = ((typed.length / 5) / timeSpent) || 0;
+    const netWPM = Math.max(0, Math.round(grossWPM - (errors / timeSpent)));
+
+    wpmDisplay.innerText = netWPM;
+
+    const accuracy = typed.length === 0 ? 100 : Math.round((correct / typed.length) * 100);
+    accuracyDisplay.innerText = accuracy + "%";
+
+    if (netWPM > bestWPM) {
+        bestWPM = netWPM;
+        localStorage.setItem("bestWPM", bestWPM);
+        bestDisplay.innerText = bestWPM;
+    }
+});
+
+function updateTimer() {
+    timeLeft--;
+    timeDisplay.innerText = timeLeft + "s";
+
+    if (timeLeft <= 0) {
+        clearInterval(timer);
+        input.disabled = true;
+    }
+}
+
+function restartTest() {
+    clearInterval(timer);
+    timeLeft = 60;
+    startTime = null;
+    input.value = "";
+    input.disabled = false;
+    wpmDisplay.innerText = 0;
+    accuracyDisplay.innerText = "100%";
+    timeDisplay.innerText = "60s";
+    loadText();
+}
+</script>
+</body>
+</html>
